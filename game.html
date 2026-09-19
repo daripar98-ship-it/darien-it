@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Darien's IT Skills Quest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+    /* light tokens */
+    --bg: #e9f0f6;
+    --panel: #ffffff;
+    --inset: #f2f7fb;
+    --line: #c3d3e0;
+    --text: #0d2233;
+    --muted: #4d677c;
+    --green: #0a7d4b;
+    --blue: #0a6ea8;
+    --red: #c4264a;
+    --amber: #8a5d00;
+    --on-accent: #ffffff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #050d15;
+      --panel: #0b1826;
+      --inset: #081320;
+      --line: #1d3550;
+      --text: #d9e7f4;
+      --muted: #8ea6bd;
+      --green: #3dffa0;
+      --blue: #56c8ff;
+      --red: #ff6b86;
+      --amber: #ffcf5c;
+      --on-accent: #03130b;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #050d15;
+    --panel: #0b1826;
+    --inset: #081320;
+    --line: #1d3550;
+    --text: #d9e7f4;
+    --muted: #8ea6bd;
+    --green: #3dffa0;
+    --blue: #56c8ff;
+    --red: #ff6b86;
+    --amber: #ffcf5c;
+    --on-accent: #03130b;
+  }
+
+  *, *::before, *::after { box-sizing: inherit; }
+  html { height: 100%; scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body {
+    margin: 0;
+    min-height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.6 var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .app { max-width: 780px; margin: 0 auto; padding: 16px 14px 32px; }
+
+  /* window title bar doubles as the HUD */
+  .bar {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 11px 16px;
+    background: var(--inset);
+    border: 1px solid var(--line);
+    border-radius: 12px 12px 0 0;
+    font: 500 13px/1.3 var(--mono);
+    color: var(--muted);
+  }
+  #path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  #path b { color: var(--green); font-weight: 700; }
+  .hud { display: flex; gap: 16px; flex-shrink: 0; align-items: center; }
+  .hud .score { color: var(--text); }
+  .hud .score b { color: var(--blue); }
+  .hearts { letter-spacing: 2px; color: var(--red); }
+  .hearts .off { opacity: .28; }
+
+  #stage {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-top: 0;
+    border-radius: 0 0 12px 12px;
+    padding: 30px clamp(16px, 4vw, 34px) 34px;
+    min-height: 460px;
+  }
+  #stage :focus { outline: none; }
+  #stage h1:focus-visible, #stage h2:focus-visible { outline: none; }
+
+  h1, h2, h3 { font-family: var(--mono); margin: 0; letter-spacing: -0.015em; }
+  h1 {
+    font-size: clamp(2rem, 7vw, 3.3rem);
+    line-height: 1.05;
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+  h1 .caret {
+    display: inline-block; width: .5em; height: .9em; margin-left: .12em;
+    background: var(--green); vertical-align: -0.08em;
+    animation: blink 1.1s steps(1) infinite;
+  }
+  h2 { font-size: 1.35rem; line-height: 1.3; font-weight: 700; margin-bottom: 10px; }
+  h3 { font-size: 1rem; font-weight: 700; margin: 26px 0 6px; color: var(--blue); }
+  p { margin: 0 0 14px; max-width: 62ch; }
+  .lead { font-size: 1.05rem; color: var(--muted); }
+  .zone { font: 500 14px var(--mono); color: var(--blue); margin-bottom: 6px; }
+  .prog { font: 500 13px var(--mono); color: var(--muted); margin-bottom: 14px; }
+
+  /* title screen level log, revealed in sequence */
+  .log { list-style: none; margin: 26px 0 30px; padding: 0; border-top: 1px dashed var(--line); }
+  .log li {
+    display: grid; grid-template-columns: 2.2rem 1fr auto; gap: 8px; align-items: baseline;
+    padding: 10px 0; border-bottom: 1px dashed var(--line);
+    opacity: 0; animation: show .01s steps(1) forwards; animation-delay: var(--d, 0s);
+  }
+  .log .n { font: 700 14px var(--mono); color: var(--green); }
+  .log .t { font: 700 15px var(--mono); }
+  .log .z { font-size: 13px; color: var(--muted); text-align: right; }
+
+  .btn {
+    font: 700 15px var(--mono);
+    padding: 13px 22px;
+    border-radius: 8px;
+    border: 1px solid var(--green);
+    background: transparent;
+    color: var(--green);
+    cursor: pointer;
+  }
+  .btn.primary { background: var(--green); color: var(--on-accent); }
+  .btn:hover { filter: brightness(1.12); }
+  .btn:focus-visible, .opt:focus-visible, .chip:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+
+  /* multiple choice */
+  .q { font-family: var(--mono); font-size: 1.2rem; line-height: 1.4; font-weight: 700; margin-bottom: 18px; }
+  .opts { display: grid; gap: 10px; }
+  .opt {
+    display: flex; gap: 14px; align-items: flex-start; width: 100%; text-align: left;
+    padding: 14px 16px;
+    background: var(--inset);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--text);
+    font: 500 16px/1.45 var(--sans);
+    cursor: pointer;
+  }
+  .opt .key {
+    flex: 0 0 auto; min-width: 26px; height: 26px; display: grid; place-items: center;
+    border: 1px solid var(--line); border-radius: 6px;
+    font: 700 12px var(--mono); color: var(--muted);
+  }
+  .opt:hover:not(:disabled) { border-color: var(--blue); }
+  .opt:disabled { cursor: default; color: var(--text); }
+  .opt.good { border-color: var(--green); background: color-mix(in srgb, var(--green) 14%, transparent); }
+  .opt.good .key { border-color: var(--green); color: var(--green); }
+  .opt.bad { border-color: var(--red); background: color-mix(in srgb, var(--red) 12%, transparent); }
+  .opt.bad .key { border-color: var(--red); color: var(--red); }
+
+  /* email card */
+  .mail {
+    background: var(--inset); border: 1px solid var(--line); border-radius: 8px;
+    padding: 14px 16px 6px; margin-bottom: 20px; font-size: 15px;
+  }
+  .mail dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; margin: 0 0 12px; }
+  .mail dt { font: 500 13px var(--mono); color: var(--muted); }
+  .mail dd { margin: 0; word-break: break-word; }
+  .mail .body { border-top: 1px dashed var(--line); padding-top: 12px; }
+  .mail .att { font: 700 13px var(--mono); color: var(--amber); margin-bottom: 10px; }
+
+  /* matching */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .col { display: grid; gap: 10px; align-content: start; }
+  .chip {
+    text-align: left; padding: 12px 13px; min-height: 56px;
+    background: var(--inset); border: 1px solid var(--line); border-radius: 8px;
+    color: var(--text); font: 500 15px/1.4 var(--sans); cursor: pointer;
+  }
+  .col.terms .chip { font: 700 14px/1.4 var(--mono); }
+  .chip:hover:not(:disabled) { border-color: var(--blue); }
+  .chip.sel { border-color: var(--blue); background: color-mix(in srgb, var(--blue) 16%, transparent); }
+  .chip.done {
+    border-color: var(--green); color: var(--text);
+    background: color-mix(in srgb, var(--green) 14%, transparent); cursor: default;
+  }
+  .shake { animation: shake .3s; }
+
+  /* feedback */
+  .fb { margin-top: 20px; min-height: 2rem; }
+  .verdict { font: 700 15px var(--mono); margin-bottom: 6px; }
+  .verdict.good { color: var(--green); }
+  .verdict.bad { color: var(--red); }
+  .fb .btn { margin-top: 6px; }
+
+  .badge {
+    display: inline-block; margin: 6px 0 22px; padding: 9px 14px;
+    border: 1px dashed var(--green); border-radius: 8px;
+    font: 700 14px var(--mono); color: var(--green);
+  }
+
+  /* results */
+  .stamp {
+    display: inline-block; margin: 4px 0 16px;
+    padding: 6px 18px 8px;
+    border: 4px solid var(--green); border-radius: 10px;
+    color: var(--green);
+    transform: rotate(-2deg);
+    font-size: clamp(2.4rem, 9vw, 4rem);
+  }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin: 22px 0 6px; }
+  .stats div { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; background: var(--inset); }
+  .stats dt { font-size: 13px; color: var(--muted); }
+  .stats dd { margin: 2px 0 0; font: 700 1.5rem var(--mono); }
+  .skills { list-style: none; margin: 0; padding: 0; }
+  .skills li { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px dashed var(--line); }
+  .skills .s { font-weight: 600; }
+  .skills .s::before { content: "\2713"; color: var(--green); margin-right: 10px; font-family: var(--mono); }
+  .skills .r { color: var(--muted); font-size: 14px; white-space: nowrap; }
+  .actions { margin-top: 26px; }
+  .foot { margin-top: 22px; font-size: 13px; color: var(--muted); }
+
+  @keyframes show { to { opacity: 1; } }
+  @keyframes blink { 50% { opacity: 0; } }
+  @keyframes shake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+  @media (max-width: 520px) {
+    .cols { gap: 10px; }
+    .log li { grid-template-columns: 1.8rem 1fr; }
+    .log .z { grid-column: 2; text-align: left; }
+    .hud { gap: 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .log li { opacity: 1; animation: none; }
+    h1 .caret { animation: none; }
+    .shake { animation: none; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="bar">
+    <span id="path"></span>
+    <span class="hud">
+      <span class="score">score <b id="score">0</b></span>
+      <span class="hearts" id="hearts" role="img" aria-label="Lives: 3 of 3"></span>
+    </span>
+  </div>
+  <main id="stage"></main>
+</div>
+
+<script>
+/* ---------- Edit these to personalize ---------- */
+const PLAYER = { name: "Darien", role: "IT and cybersecurity" };
+const MAX_LIVES = 3;
+
+/* ---------- Game content ---------- */
+const mail = (from, subject, body, att) => `
+  <div class="mail">
+    <dl>
+      <dt>From</dt><dd>${from}</dd>
+      <dt>Subject</dt><dd>${subject}</dd>
+    </dl>
+    <div class="body">
+      <p>${body}</p>
+      ${att ? `<div class="att">Attachment: ${att}</div>` : ""}
+    </div>
+  </div>`;
+
+const LEVELS = [
+  {
+    zone: "Basic computer skills",
+    name: "Help Desk Hero",
+    skill: "Troubleshooting",
+    type: "choice",
+    unit: "Ticket",
+    intro: "Users are sending in tickets. Pick the best first step for each one.",
+    items: [
+      {
+        prompt: "\u201CMy computer is really slow and the fan is loud.\u201D",
+        options: [
+          "Buy a new computer",
+          "Open Task Manager to find what is using the CPU and memory, then restart",
+          "Delete the Windows folder to free up space",
+          "Turn the monitor off and on"
+        ],
+        answer: 1,
+        why: "Task Manager shows which programs are hogging resources. A restart also clears stuck processes."
+      },
+      {
+        prompt: "\u201CI can't get on the Wi-Fi, but my coworker's laptop works fine.\u201D",
+        options: [
+          "Reinstall the operating system",
+          "Change the router's admin password",
+          "Toggle Wi-Fi, forget the network, and rejoin it",
+          "Unplug the keyboard"
+        ],
+        answer: 2,
+        why: "Only one device is affected, so start with that device's connection settings before touching the network."
+      },
+      {
+        prompt: "\u201CThe printer says it's offline, but it's powered on.\u201D",
+        options: [
+          "Check the cable or network connection and the default printer setting, then restart the print spooler",
+          "Replace the toner",
+          "Rename the document",
+          "Format the hard drive"
+        ],
+        answer: 0,
+        why: "\u201COffline\u201D usually means a connection or queue problem, not supplies. Check the link, the default printer, and the spooler."
+      },
+      {
+        prompt: "\u201CI deleted an important file by accident!\u201D",
+        options: [
+          "Tell them it is gone forever",
+          "Format the drive and start fresh",
+          "Reinstall the browser",
+          "Check the Recycle Bin, then backups or version history"
+        ],
+        answer: 3,
+        why: "Deleted files often sit in the Recycle Bin, and cloud sync or backups usually keep earlier versions."
+      }
+    ]
+  },
+  {
+    zone: "Basic computer skills",
+    name: "Parts and Purpose",
+    skill: "Hardware fundamentals",
+    type: "match",
+    prompt: "Click a term, then click what it does.",
+    intro: "Match each computer component to its job. Click a term on the left, then its match on the right.",
+    pairs: [
+      { term: "CPU", def: "Runs instructions. The computer's brain.", why: "The CPU executes the instructions that programs give it." },
+      { term: "RAM", def: "Short-term memory for open programs", why: "RAM holds what is in use right now and clears when power is off." },
+      { term: "SSD", def: "Long-term storage for files and the OS", why: "Storage keeps your data when the machine is off. SSDs are much faster than old spinning drives." },
+      { term: "Router", def: "Connects your devices to the internet", why: "The router directs traffic between your local network and the internet." },
+      { term: "GPU", def: "Draws graphics and video", why: "The GPU is built for rendering images, video, and games." }
+    ]
+  },
+  {
+    zone: "Cybersecurity",
+    name: "Phish or Legit",
+    skill: "Phishing detection",
+    type: "choice",
+    unit: "Email",
+    intro: "Read each email and decide: report it as phishing, or is it safe? Not every email is a trap.",
+    items: [
+      {
+        card: mail("Account Security &lt;security@paypa1-support.com&gt;", "Your account is locked! Verify within 24 hours",
+          "Click the link below and confirm your password now or your account will be permanently closed."),
+        prompt: "What do you do with this email?",
+        options: ["Report as phishing", "Looks legitimate"],
+        answer: 0,
+        why: "The domain uses a number 1 in place of the letter l, it pressures you with a deadline, and it asks for your password. All classic signs."
+      },
+      {
+        card: mail("Northwind Bank &lt;statements@northwindbank.com&gt;", "Your March statement is ready",
+          "Your latest statement is available in online banking. Sign in through our app or the website you normally use. We will never ask for your password by email."),
+        prompt: "What do you do with this email?",
+        options: ["Report as phishing", "Looks legitimate"],
+        answer: 1,
+        why: "The sender domain matches the bank, there is no urgency, and it sends you to the usual app instead of a link asking for credentials."
+      },
+      {
+        card: mail("Dana Reyes, CEO &lt;dana.reyes.ceo@gmail.com&gt;", "Quick favor, keep this between us",
+          "I'm stuck in a meeting. I need you to buy five gift cards and send me the codes right away. Don't tell anyone yet."),
+        prompt: "What do you do with this email?",
+        options: ["Report as phishing", "Looks legitimate"],
+        answer: 0,
+        why: "An executive using a free personal email, asking for gift cards, and demanding secrecy is a well-known impersonation scam."
+      },
+      {
+        card: mail("Delivery Notice &lt;billing@delivery-notice.biz&gt;", "Your package could not be delivered",
+          "Open the attached invoice to reschedule your delivery.", "Invoice_4471.exe"),
+        prompt: "What do you do with this email?",
+        options: ["Report as phishing", "Looks legitimate"],
+        answer: 0,
+        why: "You did not order anything, the sender is unknown, and an .exe file is a program, not an invoice. Opening it could install malware."
+      },
+      {
+        card: mail("IT Support &lt;it-support@yourcompany.com&gt;", "Scheduled maintenance Saturday, 10 PM to 2 AM",
+          "The file server will be offline during this window. No action is needed. Questions? Submit a ticket in the internal help desk portal."),
+        prompt: "What do you do with this email?",
+        options: ["Report as phishing", "Looks legitimate"],
+        answer: 1,
+        why: "It comes from the company domain, asks for nothing, and points to the normal internal portal. Good security means spotting the safe ones too."
+      }
+    ]
+  },
+  {
+    zone: "Cybersecurity",
+    name: "Password Forge",
+    skill: "Account security",
+    type: "choice",
+    unit: "Round",
+    intro: "Three quick rounds on keeping accounts safe.",
+    items: [
+      {
+        prompt: "Which password is the strongest?",
+        options: ["password123", "Darien2024", "coral-tundra-vessel-9-lantern", "Qwerty!"],
+        answer: 2,
+        why: "Length matters most. A long passphrase of random words is hard to guess and easier to remember than a short, complicated one."
+      },
+      {
+        prompt: "What is the best way to handle passwords across many accounts?",
+        options: [
+          "Reuse one strong password everywhere",
+          "Use a password manager with a unique password for each account",
+          "Keep them on a sticky note on the monitor",
+          "Use a pet's name plus the year"
+        ],
+        answer: 1,
+        why: "Unique passwords stop one breach from unlocking everything, and a manager makes that practical."
+      },
+      {
+        prompt: "Which single step still protects an account after its password leaks?",
+        options: [
+          "Making the password all lowercase",
+          "Changing it once every ten years",
+          "Sharing it only with close friends",
+          "Turning on multi-factor authentication (MFA)"
+        ],
+        answer: 3,
+        why: "With MFA, a stolen password is not enough. The attacker also needs your second factor."
+      }
+    ]
+  },
+  {
+    zone: "Cybersecurity",
+    name: "Threat Match",
+    skill: "Defense strategy",
+    type: "match",
+    prompt: "Click a threat, then click the defense that fits best.",
+    intro: "Match each threat to the defense that stops it. Click a threat on the left, then its match on the right.",
+    pairs: [
+      { term: "Phishing", def: "Email filtering and user awareness training", why: "Filters catch the bulk, and trained users catch the rest." },
+      { term: "Ransomware", def: "Tested, offline backups", why: "If files are encrypted, a clean backup lets you restore without paying." },
+      { term: "Stolen password", def: "Multi-factor authentication", why: "MFA blocks logins that only have the password." },
+      { term: "Malware", def: "Antivirus and endpoint protection", why: "Endpoint tools detect and block malicious programs on devices." },
+      { term: "Unwanted network traffic", def: "Firewall", why: "A firewall allows or blocks traffic based on rules." }
+    ]
+  }
+];
+
+/* ---------- State ---------- */
+const stage = document.getElementById("stage");
+const clone = (o) => JSON.parse(JSON.stringify(o));
+const fresh = () => ({
+  lv: 0, score: 0, lives: MAX_LIVES, streak: 0, best: 0, right: 0, tries: 0,
+  per: LEVELS.map(() => ({ right: 0, tries: 0 }))
+});
+let S = fresh();
+let cur = {};
+let snap = null;
+
+function shuffle(a) {
+  let out;
+  do {
+    out = a.slice();
+    for (let i = out.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [out[i], out[j]] = [out[j], out[i]];
+    }
+  } while (out.length > 1 && out.every((v, i) => v === a[i]));
+  return out;
+}
+
+function setPath(p) {
+  document.getElementById("path").innerHTML = `<b>${PLAYER.name.toLowerCase()}@quest</b>:${p}$`;
+}
+function hud() {
+  document.getElementById("score").textContent = S.score;
+  const h = document.getElementById("hearts");
+  h.innerHTML = "\u2665".repeat(Math.max(S.lives, 0)) + `<span class="off">${"\u2665".repeat(MAX_LIVES - Math.max(S.lives, 0))}</span>`;
+  h.setAttribute("aria-label", `Lives: ${Math.max(S.lives, 0)} of ${MAX_LIVES}`);
+}
+function render(html) {
+  stage.innerHTML = html;
+  const head = stage.querySelector("h1, h2");
+  if (head) { head.setAttribute("tabindex", "-1"); head.focus({ preventScroll: true }); }
+  window.scrollTo(0, 0);
+}
+
+/* ---------- Screens ---------- */
+function showTitle() {
+  S = fresh(); cur = {};
+  setPath("~"); hud();
+  const rows = LEVELS.map((L, i) => `
+    <li style="--d:${(0.35 + i * 0.28).toFixed(2)}s">
+      <span class="n">${i + 1}</span><span class="t">${L.name}</span><span class="z">${L.zone}</span>
+    </li>`).join("");
+  render(`
+    <h1>${PLAYER.name}'s IT Skills Quest<span class="caret" aria-hidden="true"></span></h1>
+    <p class="lead">${LEVELS.length} short levels covering everyday computer skills and cybersecurity. It takes about four minutes. Answer correctly in a row to build a streak and earn bonus points. You have ${MAX_LIVES} lives.</p>
+    <ol class="log" aria-label="Levels">${rows}</ol>
+    <button class="btn primary" data-act="start">Start game</button>
+  `);
+}
+
+function showIntro() {
+  const L = LEVELS[S.lv];
+  cur = {};
+  setPath(`~/level-${S.lv + 1}`); hud();
+  render(`
+    <p class="zone">${L.zone}</p>
+    <h2>Level ${S.lv + 1}: ${L.name}</h2>
+    <p class="lead">${L.intro}</p>
+    <button class="btn primary" data-act="begin">Start level</button>
+  `);
+  stage.querySelector("[data-act=begin]").focus();
+}
+
+function startLevel() {
+  const L = LEVELS[S.lv];
+  setPath(`~/level-${S.lv + 1}/${L.name.toLowerCase().replace(/\s+/g, "-")}`);
+  hud();
+  if (L.type === "choice") { cur = { mode: "choice", i: 0, locked: false }; showQuestion(); }
+  else showMatch();
+}
+
+/* multiple choice */
+function showQuestion() {
+  const L = LEVELS[S.lv], q = L.items[cur.i];
+  cur.locked = false;
+  render(`
+    <p class="prog">${L.unit} ${cur.i + 1} of ${L.items.length}</p>
+    ${q.card || ""}
+    <h2 class="q">${q.prompt}</h2>
+    <div class="opts">
+      ${q.options.map((o, k) => `
+        <button class="opt" data-act="opt" data-k="${k}">
+          <span class="key">${k + 1}</span><span>${o}</span>
+        </button>`).join("")}
+    </div>
+    <div class="fb" id="fb" aria-live="polite"></div>
+  `);
+}
+
+function scoreAnswer(ok) {
+  const p = S.per[S.lv];
+  S.tries++; p.tries++;
+  if (ok) {
+    S.streak++; S.best = Math.max(S.best, S.streak);
+    S.right++; p.right++;
+    const gain = 100 + 20 * Math.min(S.streak - 1, 5);
+    S.score += gain; hud();
+    return gain;
+  }
+  S.streak = 0; S.lives--; hud();
+  return 0;
+}
+
+function verdict(ok, gain, why) {
+  if (ok) {
+    const streak = S.streak >= 2 ? ` Streak of ${S.streak}.` : "";
+    return `<p class="verdict good">Correct, +${gain} points.${streak}</p><p>${why}</p>`;
+  }
+  const left = S.lives > 0 ? ` ${S.lives} ${S.lives === 1 ? "life" : "lives"} left.` : "";
+  return `<p class="verdict bad">Not quite.${left}</p><p>${why}</p>`;
+}
+
+function answer(k) {
+  if (cur.locked) return;
+  cur.locked = true;
+  const L = LEVELS[S.lv], q = L.items[cur.i];
+  const ok = k === q.answer;
+  const gain = scoreAnswer(ok);
+  stage.querySelectorAll(".opt").forEach((b, j) => {
+    b.disabled = true;
+    if (j === q.answer) b.classList.add("good");
+    else if (j === k) b.classList.add("bad");
+  });
+  const last = cur.i + 1 >= L.items.length;
+  const label = S.lives <= 0 ? "Continue" : last ? "Finish level" : "Next";
+  const fb = document.getElementById("fb");
+  fb.innerHTML = verdict(ok, gain, q.why) + `<button class="btn primary" data-act="next">${label}</button>`;
+  fb.querySelector("button").focus();
+}
+
+function next() {
+  const L = LEVELS[S.lv];
+  if (S.lives <= 0) return gameOver();
+  if (cur.i + 1 >= L.items.length) return levelDone();
+  cur.i++;
+  showQuestion();
+}
+
+/* matching */
+function showMatch() {
+  const L = LEVELS[S.lv];
+  cur = { mode: "match", sel: null, done: new Set(), order: shuffle(L.pairs.map((_, i) => i)) };
+  const terms = L.pairs.map((p, i) => `<button class="chip" data-act="chip" data-side="L" data-i="${i}">${p.term}</button>`).join("");
+  const defs = cur.order.map((i) => `<button class="chip" data-act="chip" data-side="R" data-i="${i}">${L.pairs[i].def}</button>`).join("");
+  render(`
+    <p class="prog" id="matched">Matched 0 of ${L.pairs.length}</p>
+    <h2 class="q">${L.prompt}</h2>
+    <div class="cols">
+      <div class="col terms">${terms}</div>
+      <div class="col">${defs}</div>
+    </div>
+    <div class="fb" id="fb" aria-live="polite"></div>
+  `);
+}
+
+function pick(side, i) {
+  const L = LEVELS[S.lv];
+  const chips = stage.querySelectorAll(".chip");
+  const el = stage.querySelector(`.chip[data-side="${side}"][data-i="${i}"]`);
+  if (!el || el.disabled) return;
+  if (!cur.sel || cur.sel.side === side) {
+    chips.forEach((c) => { if (c.dataset.side === side) c.classList.remove("sel"); });
+    el.classList.add("sel");
+    cur.sel = { side, idx: i };
+    return;
+  }
+  const a = cur.sel.side === "L" ? cur.sel.idx : i;
+  const b = cur.sel.side === "L" ? i : cur.sel.idx;
+  const other = stage.querySelector(`.chip[data-side="${cur.sel.side}"][data-i="${cur.sel.idx}"]`);
+  cur.sel = null;
+  const ok = a === b;
+  const gain = scoreAnswer(ok);
+  const fb = document.getElementById("fb");
+  if (ok) {
+    cur.done.add(a);
+    [el, other].forEach((c) => { c.classList.remove("sel"); c.classList.add("done"); c.disabled = true; });
+    document.getElementById("matched").textContent = `Matched ${cur.done.size} of ${L.pairs.length}`;
+    fb.innerHTML = verdict(true, gain, L.pairs[a].why);
+    if (cur.done.size === L.pairs.length) {
+      fb.innerHTML += `<button class="btn primary" data-act="finish">Finish level</button>`;
+      fb.querySelector("button").focus();
+    }
+  } else {
+    chips.forEach((c) => c.classList.remove("sel"));
+    [el, other].forEach((c) => { c.classList.add("shake"); c.addEventListener("animationend", () => c.classList.remove("shake"), { once: true }); });
+    fb.innerHTML = `<p class="verdict bad">Not a match.${S.lives > 0 ? ` ${S.lives} ${S.lives === 1 ? "life" : "lives"} left.` : ""}</p><p>Try another pair.</p>`;
+    if (S.lives <= 0) {
+      fb.innerHTML = `<p class="verdict bad">Out of lives.</p><button class="btn primary" data-act="finish">Continue</button>`;
+      stage.querySelectorAll(".chip").forEach((c) => (c.disabled = true));
+      fb.querySelector("button").focus();
+    }
+  }
+}
+
+function finish() { S.lives <= 0 ? gameOver() : levelDone(); }
+
+/* between levels */
+function levelDone() {
+  const L = LEVELS[S.lv], p = S.per[S.lv];
+  const last = S.lv === LEVELS.length - 1;
+  cur = {};
+  render(`
+    <h2>Level cleared</h2>
+    <p class="lead">${p.right} correct out of ${p.tries} ${p.tries === 1 ? "attempt" : "attempts"} on ${L.name}.</p>
+    <div class="badge">Skill unlocked: ${L.skill}</div>
+    <div><button class="btn primary" data-act="nextLevel">${last ? "See results" : "Next level"}</button></div>
+  `);
+  stage.querySelector("[data-act=nextLevel]").focus();
+}
+
+function gameOver() {
+  cur = {};
+  render(`
+    <h2>Out of lives</h2>
+    <p class="lead">No problem. Level ${S.lv + 1} restarts with full lives and the score you had when you began it.</p>
+    <button class="btn primary" data-act="retry">Retry level</button>
+  `);
+  stage.querySelector("[data-act=retry]").focus();
+}
+
+function showResults() {
+  cur = {};
+  setPath("~/results"); hud();
+  const acc = S.tries ? Math.round((100 * S.right) / S.tries) : 0;
+  const rank = acc >= 90 ? "Security Ace" : acc >= 75 ? "Sharp Defender" : "Rising Talent";
+  const group = (zone) => `
+    <h3>${zone}</h3>
+    <ul class="skills">
+      ${LEVELS.map((L, i) => L.zone === zone
+        ? `<li><span class="s">${L.skill}</span><span class="r">${S.per[i].right} of ${S.per[i].tries} correct</span></li>` : "").join("")}
+    </ul>`;
+  render(`
+    <h1 class="stamp">Hired!</h1>
+    <p class="lead">${PLAYER.name} cleared all ${LEVELS.length} levels. Final rank: <strong>${rank}</strong>.</p>
+    <dl class="stats">
+      <div><dt>Score</dt><dd>${S.score}</dd></div>
+      <div><dt>Accuracy</dt><dd>${acc}%</dd></div>
+      <div><dt>Best streak</dt><dd>${S.best}</dd></div>
+      <div><dt>Lives left</dt><dd>${S.lives}</dd></div>
+    </dl>
+    ${group("Basic computer skills")}
+    ${group("Cybersecurity")}
+    <div class="actions"><button class="btn primary" data-act="again">Play again</button></div>
+    <p class="foot">Built by ${PLAYER.name} as a portfolio project.</p>
+  `);
+  stage.querySelector("[data-act=again]").focus();
+}
+
+/* ---------- Events ---------- */
+stage.addEventListener("click", (e) => {
+  const t = e.target.closest("[data-act]");
+  if (!t) return;
+  switch (t.dataset.act) {
+    case "start": showIntro(); break;
+    case "begin": snap = clone(S); startLevel(); break;
+    case "opt": answer(+t.dataset.k); break;
+    case "chip": pick(t.dataset.side, +t.dataset.i); break;
+    case "next": next(); break;
+    case "finish": finish(); break;
+    case "nextLevel": S.lv++; S.lv >= LEVELS.length ? showResults() : showIntro(); break;
+    case "retry": S = clone(snap); S.lives = MAX_LIVES; startLevel(); break;
+    case "again": showTitle(); break;
+  }
+});
+
+document.addEventListener("keydown", (e) => {
+  if (cur.mode !== "choice" || cur.locked) return;
+  const k = parseInt(e.key, 10);
+  const q = LEVELS[S.lv].items[cur.i];
+  if (k >= 1 && k <= q.options.length) answer(k - 1);
+});
+
+showTitle();
+</script>
+</body>
+</html>
